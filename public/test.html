@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>B2 Video Access Test</title>
+  <style>
+    body { font-family: system-ui, sans-serif; background: #0b0d12; color: #f3f4f6; padding: 20px; max-width: 720px; margin: auto; }
+    h1 { font-size: 1.4rem; margin-bottom: 12px; }
+    .controls { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+    select, button { padding: 10px 14px; border-radius: 8px; border: 1px solid #374151; font-size: 1rem; }
+    select { background: #1f2937; color: #fff; }
+    button { background: #ff6d00; color: #fff; border: none; font-weight: 700; cursor: pointer; }
+    button.secondary { background: #374151; }
+    pre { background: #111827; border: 1px solid #374151; padding: 14px; border-radius: 8px; white-space: pre-wrap; word-break: break-all; font-size: 0.85rem; line-height: 1.5; }
+    video { width: 100%; margin-top: 16px; border-radius: 8px; background: #000; }
+    .ok { color: #34d399; font-weight: bold; }
+    .err { color: #f87171; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>Backblaze B2 Access &amp; Stream Diagnostic</h1>
+  <div class="controls">
+    <select id="video-select">
+      <option value="random">Random Video (1–10)</option>
+      <option value="1">1 — video-01.mp4 (Skydiving 4K)</option>
+      <option value="2">2 — video-02.mp4 (Drone FPV)</option>
+      <option value="3">3 — video-03.mp4 (SBS FPV)</option>
+      <option value="4">4 — video-04.mp4 (Solar System 360)</option>
+      <option value="5">5 — video-05.mp4 (Disney Castle)</option>
+      <option value="6">6 — video-06.mp4 (Mars 360)</option>
+      <option value="7">7 — video-07.mp4 (World 360)</option>
+      <option value="8">8 — video-08.mp4 (Hyperlapse 360)</option>
+      <option value="9">9 — video-09.mp4 (Solar Eclipse 360)</option>
+      <option value="10">10 — video-10.mp4 (Solar System Flat)</option>
+    </select>
+    <button id="run-btn">Test Access</button>
+    <button id="release-btn" class="secondary">Release Slot</button>
+  </div>
+
+  <pre id="log">Ready. Tap "Test Access" to check Backblaze B2 authorization and video streaming.</pre>
+  <video id="test-video" controls playsinline crossorigin="anonymous"></video>
+
+  <script>
+    const VIDEOS = {
+      '1': 'video-01.mp4', '2': 'video-02.mp4', '3': 'video-03.mp4',
+      '4': 'video-04.mp4', '5': 'video-05.mp4', '6': 'video-06.mp4',
+      '7': 'video-07.mp4', '8': 'video-08.mp4', '9': 'video-09.mp4',
+      '10': 'video-10.mp4'
+    };
+
+    const logEl = document.getElementById('log');
+    const videoEl = document.getElementById('test-video');
+    const selectEl = document.getElementById('video-select');
+    const sessionId = `test-${Date.now()}`;
+
+    function log(msg, cls = '') {
+      const line = document.createElement('div');
+      if (cls) line.className = cls;
+      line.textContent = msg;
+      logEl.appendChild(line);
+    }
+
+    document.getElementById('run-btn').addEventListener('click', async () => {
+      logEl.innerHTML = '';
+      videoEl.removeAttribute('src');
+      videoEl.load();
+
+      let id = selectEl.value;
+      if (id === 'random') {
+        id = String(Math.floor(Math.random() * 10) + 1);
+      }
+      const file = VIDEOS[id];
+      log(`1. Selected Video #${id} (${file})`);
+
+      try {
+        log('2. Requesting signed URL from /api/session/claim...');
+        const res = await fetch('/api/session/claim', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId, videoId: id, title: `Test ${file}`, file })
+        });
+
+        const text = await res.text();
+        let data;
+        try {
+          data = JSON.parse(text);
+        } catch {
+          log(`FAIL: API returned non-JSON (${res.status}): ${text}`, 'err');
+          return;
+        }
+
+        if (!res.ok || data.error || !data.streamUrl) {
+          log(`FAIL (${res.status}): ${data.error || data.message || text}`, 'err');
+          return;
+        }
+
+        log('PASS: Signed Backblaze B2 URL generated.', 'ok');
+        log(`URL: ${data.streamUrl.split('?')[0]}?Authorization=***`);
+        log('3. Testing CORS & metadata load in <video crossorigin="anonymous">...');
+
+        videoEl.onloadedmetadata = () => {
+          log(`PASS: Access granted! Resolution: ${videoEl.videoWidth}x${videoEl.videoHeight}, Duration: ${videoEl.duration.toFixed(1)}s`, 'ok');
+        };
+
+        videoEl.onerror = () => {
+          const code = videoEl.error ? videoEl.error.code : 'unknown';
+          log(`FAIL: Video element error (code ${code}). Usually caused by missing B2 CORS rules or wrong filename (${file}).`, 'err');
+        };
+
+        videoEl.src = data.streamUrl;
+      } catch (err) {
+        log(`FAIL: Network/JS exception: ${err.message}`, 'err');
+      }
+    });
+
+    document.getElementById('release-btn').addEventListener('click', async () => {
+      await fetch('/api/session/release', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId })
+      });
+      log('Released test session slot.', 'ok');
+    });
+  </script>
+</body>
+</html>

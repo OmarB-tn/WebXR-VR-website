@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VR Experiences — Preview &amp; QR Kiosk</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: #0b0d12;
+      color: #f3f4f6;
+      font-family: system-ui, -apple-system, sans-serif;
+      padding: 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    header {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      margin-bottom: 24px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid #1f2937;
+    }
+    header h1 { font-size: 1.45rem; }
+    header p { color: #9ca3af; font-size: 0.9rem; margin-top: 4px; }
+    .url-config {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: #111827;
+      padding: 8px 12px;
+      border-radius: 10px;
+      border: 1px solid #374151;
+    }
+    .url-config label { font-size: 0.8rem; color: #9ca3af; white-space: nowrap; }
+    .url-config input {
+      background: transparent;
+      border: none;
+      color: #ff6d00;
+      font-weight: 600;
+      font-size: 0.9rem;
+      width: 270px;
+      outline: none;
+    }
+
+    /* 2-Column Grid for all 10 Videos (2 x 5) */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
+    }
+    @media (max-width: 680px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+
+    .card {
+      position: relative;
+      background: #151923;
+      border: 1px solid #262c3a;
+      border-radius: 14px;
+      overflow: hidden;
+      cursor: pointer;
+      transition: transform 0.15s ease, border-color 0.15s ease;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      border-color: #ff6d00;
+    }
+    .video-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #000;
+    }
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+    .badge {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(11, 13, 18, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #ff6d00;
+    }
+    .tap-hint {
+      position: absolute;
+      bottom: 10px;
+      right: 10px;
+      background: rgba(255, 109, 0, 0.92);
+      color: #fff;
+      padding: 5px 11px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+    .meta {
+      padding: 14px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+    .meta h2 { font-size: 1rem; font-weight: 600; }
+    .meta span {
+      font-size: 0.78rem;
+      color: #9ca3af;
+      background: #1f2937;
+      padding: 4px 8px;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+
+    /* QR Reveal Overlay inside each card */
+    .qr-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(11, 13, 18, 0.95);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.18s ease;
+      z-index: 5;
+    }
+    .card.revealed .qr-overlay {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .qr-box {
+      background: #ffffff;
+      padding: 10px;
+      border-radius: 12px;
+      width: 170px;
+      height: 170px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 10px;
+    }
+    .qr-box img { width: 100%; height: 100%; display: block; }
+    .qr-title { font-weight: 700; font-size: 0.95rem; margin-bottom: 4px; }
+    .qr-link { font-size: 0.75rem; color: #9ca3af; word-break: break-all; margin-bottom: 10px; }
+    .close-pill {
+      background: #374151;
+      color: #fff;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 5px 14px;
+      border-radius: 999px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>VR Video Previews (Local Snippets)</h1>
+      <p>Tap any video preview to reveal its Cardboard VR QR code.</p>
+    </div>
+    <div class="url-config">
+      <label for="base-url">VR Site URL:</label>
+      <input id="base-url" type="text" value="https://vr-cardboard-player.pages.dev" />
+    </div>
+  </header>
+
+  <main class="grid" id="grid"></main>
+
+  <script>
+    const VIDEOS = [
+      { id: 1,  title: '3D 360 Skydiving (Vuze 4K)', file: 'video-01.mp4', tag: '360° 3D OU' },
+      { id: 2,  title: '3D Drone FPV Freestyle',     file: 'video-02.mp4', tag: 'FPV 3D SBS' },
+      { id: 3,  title: '3D SBS FPV Freestyle',       file: 'video-03.mp4', tag: 'FPV 3D SBS' },
+      { id: 4,  title: '360 Solar System VR',        file: 'video-04.mp4', tag: '360° Mono' },
+      { id: 5,  title: 'Eagle POV: Disney Castle',   file: 'video-05.mp4', tag: '360° Mono' },
+      { id: 6,  title: 'Explore Mars in 360 VR',     file: 'video-06.mp4', tag: '360° Mono' },
+      { id: 7,  title: 'Fly Around the World 360',   file: 'video-07.mp4', tag: '360° Mono' },
+      { id: 8,  title: 'Ground to Space Hyperlapse', file: 'video-08.mp4', tag: '360° Mono' },
+      { id: 9,  title: 'Total Solar Eclipse 360',    file: 'video-09.mp4', tag: '360° Mono' },
+      { id: 10, title: 'Solar System Experience',    file: 'video-10.mp4', tag: 'Flat Mono' }
+    ];
+
+    const SNIPPET_START = 5;
+    const SNIPPET_END = 13;
+
+    const baseUrlInput = document.getElementById('base-url');
+    const savedBase = localStorage.getItem('vr_pages_base_url');
+    if (savedBase) baseUrlInput.value = savedBase;
+
+    const grid = document.getElementById('grid');
+
+    function renderGrid() {
+      const baseUrl = baseUrlInput.value.replace(/\/$/, '');
+      grid.innerHTML = '';
+
+      VIDEOS.forEach((v) => {
+        const targetUrl = `${baseUrl}/video/${v.id}`;
+        const qrSrc = `/api/qr?url=${encodeURIComponent(targetUrl)}`;
+
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="video-wrap">
+            <span class="badge">#${String(v.id).padStart(2, '0')}</span>
+            <video src="/videos/${v.file}#t=${SNIPPET_START},${SNIPPET_END}" muted autoplay loop playsinline preload="metadata"></video>
+            <span class="tap-hint">Tap for QR</span>
+          </div>
+          <div class="meta">
+            <h2>${v.title}</h2>
+            <span>${v.tag}</span>
+          </div>
+          <div class="qr-overlay">
+            <div class="qr-box">
+              <img src="${qrSrc}" alt="QR Code for ${v.title}" />
+            </div>
+            <div class="qr-title">#${v.id} — ${v.title}</div>
+            <div class="qr-link">${targetUrl}</div>
+            <span class="close-pill">Tap to hide QR</span>
+          </div>
+        `;
+
+        // Enforce strict 8-second snippet loop so the browser never downloads the entire file
+        const videoEl = card.querySelector('video');
+        videoEl.addEventListener('timeupdate', () => {
+          const endBound = videoEl.duration ? Math.min(SNIPPET_END, videoEl.duration - 0.5) : SNIPPET_END;
+          if (videoEl.currentTime >= endBound || videoEl.currentTime < SNIPPET_START - 0.5) {
+            videoEl.currentTime = SNIPPET_START;
+          }
+        });
+
+        card.addEventListener('click', () => {
+          card.classList.toggle('revealed');
+        });
+
+        grid.appendChild(card);
+      });
+    }
+
+    baseUrlInput.addEventListener('change', () => {
+      localStorage.setItem('vr_pages_base_url', baseUrlInput.value.trim());
+      renderGrid();
+    });
+
+    renderGrid();
+  </script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "1":  { "title": "3D 360 Skydiving (Vuze 4K)", "file": "video-01.mp4", "projection": "360",  "stereo": "ou" },
+  "2":  { "title": "3D Drone FPV Freestyle",     "file": "video-02.mp4", "projection": "flat", "stereo": "sbs" },
+  "3":  { "title": "3D SBS FPV Freestyle",       "file": "video-03.mp4", "projection": "flat", "stereo": "sbs" },
+  "4":  { "title": "360 Solar System VR",        "file": "video-04.mp4", "projection": "360",  "stereo": "mono" },
+  "5":  { "title": "Eagle POV: Disney Castle",   "file": "video-05.mp4", "projection": "360",  "stereo": "mono" },
+  "6":  { "title": "Explore Mars in 360 VR",     "file": "video-06.mp4", "projection": "360",  "stereo": "mono" },
+  "7":  { "title": "Fly Around the World 360",   "file": "video-07.mp4", "projection": "360",  "stereo": "mono" },
+  "8":  { "title": "Ground to Space Hyperlapse", "file": "video-08.mp4", "projection": "360",  "stereo": "mono" },
+  "9":  { "title": "Total Solar Eclipse 360",    "file": "video-09.mp4", "projection": "360",  "stereo": "mono" },
+  "10": { "title": "Solar System Experience",    "file": "video-10.mp4", "projection": "flat", "stereo": "mono" }
+}

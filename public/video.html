@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>WebXR Cardboard Player</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "/vendor/three/three.module.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="vr-canvas"></canvas>
+
+  <div id="start-overlay" class="overlay">
+    <h1 id="video-title">Loading experience...</h1>
+    <p id="status-text">Checking WebXR headset support...</p>
+    <button id="cardboard-btn" class="hidden" aria-label="Enter VR">
+      <svg viewBox="0 0 64 42" xmlns="http://www.w3.org/2000/svg">
+        <path d="M58 2H6C3.8 2 2 3.8 2 6v30c0 2.2 1.8 4 4 4h18.5c1.5 0 2.9-.8 3.6-2.2l2.1-4.2c.7-1.4 2.9-1.4 3.6 0l2.1 4.2c.7 1.4 2.1 2.2 3.6 2.2H58c2.2 0 4-1.8 4-4V6c0-2.2-1.8-4-4-4zM18 28c-4.4 0-8-3.6-8-8s3.6-8 8-8 8 3.6 8 8-3.6 8-8 8zm28 0c-4.4 0-8-3.6-8-8s3.6-8 8-8 8 3.6 8 8-3.6 8-8 8z"/>
+      </svg>
+      <span>Enter VR</span>
+    </button>
+  </div>
+
+  <div id="end-overlay" class="overlay hidden">
+    <h1>Experience Complete</h1>
+    <p>Thank you for watching. Please return the Cardboard headset to the operator.</p>
+  </div>
+
+  <script type="module" src="/js/player.js"></script>
+</body>
+</html>
